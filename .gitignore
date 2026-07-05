@@ -1,0 +1,13 @@
+# Bitácoras generadas por el monitor (no se suben al repo)
+monitor.log
+
+# Variables de entorno con llaves secretas
+.env
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+
+# Entornos virtuales
+venv/
+.venv/
