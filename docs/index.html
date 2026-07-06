@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor de APIs — Dashboard</title>
+  <style>
+    /* ---------- Estilos: apariencia del dashboard ---------- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+    .contenedor { max-width: 960px; margin: 0 auto; }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; }
+    .subtitulo { color: #94a3b8; margin-bottom: 28px; font-size: 0.95rem; }
+    .tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .tarjeta {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .tarjeta .url { font-size: 0.85rem; color: #94a3b8; word-break: break-all; margin-bottom: 12px; }
+    .uptime { font-size: 2.2rem; font-weight: 700; }
+    .uptime.bien  { color: #4ade80; }
+    .uptime.medio { color: #facc15; }
+    .uptime.mal   { color: #f87171; }
+    .detalle { font-size: 0.85rem; color: #cbd5e1; margin-top: 8px; line-height: 1.6; }
+    h2 { font-size: 1.1rem; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #334155; }
+    th { color: #94a3b8; font-weight: 600; }
+    .ok    { color: #4ade80; }
+    .falla { color: #f87171; }
+    .pie { margin-top: 24px; color: #64748b; font-size: 0.8rem; }
+    button {
+      background: #3b82f6; color: white; border: none; border-radius: 8px;
+      padding: 8px 16px; cursor: pointer; font-size: 0.9rem; margin-bottom: 24px;
+    }
+    button:hover { background: #2563eb; }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <h1>🛰️ Monitor de APIs</h1>
+    <p class="subtitulo">Estadísticas de disponibilidad — datos en vivo desde Supabase</p>
+    <button onclick="cargarDatos()">🔄 Actualizar</button>
+
+    <div class="tarjetas" id="tarjetas">Cargando…</div>
+
+    <h2>Últimas revisiones</h2>
+    <table>
+      <thead>
+        <tr><th>Fecha (local)</th><th>API</th><th>Resultado</th><th>Status</th><th>Tiempo</th></tr>
+      </thead>
+      <tbody id="tabla"></tbody>
+    </table>
+
+    <p class="pie">Proyecto de práctica: Python · Supabase · GitHub Actions · GitHub Pages</p>
+  </div>
+
+  <!-- Librería oficial de Supabase para JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ---------- Conexión a Supabase ----------
+    // Esta es la llave PÚBLICA (publishable): está bien que se vea,
+    // porque las políticas RLS solo le permiten LEER el historial.
+    const SUPABASE_URL = "https://ynmkdmbhchaztjygscrm.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_LXJt7UN6KcqS-lQj5Sqk1g_K5UAsCHH";
+    const cliente = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function cargarDatos() {
+      // Pide las últimas 1000 revisiones, de la más nueva a la más vieja
+      const { data, error } = await cliente
+        .from("historial_monitoreo")
+        .select("*")
+        .order("revisado_en", { ascending: false })
+        .limit(1000);
+
+      if (error) {
+        document.getElementById("tarjetas").innerHTML =
+          "<p>Error al consultar Supabase: " + error.message + "</p>";
+        return;
+      }
+
+      mostrarTarjetas(data);
+      mostrarTabla(data);
+    }
+
+    // ---------- Tarjetas: resumen por API ----------
+    function mostrarTarjetas(filas) {
+      // Agrupar las revisiones por URL
+      const porUrl = {};
+      for (const fila of filas) {
+        if (!porUrl[fila.url]) porUrl[fila.url] = [];
+        porUrl[fila.url].push(fila);
+      }
+
+      let html = "";
+      for (const [url, revisiones] of Object.entries(porUrl)) {
+        const total = revisiones.length;
+        const exitosas = revisiones.filter(r => r.exito).length;
+        const uptime = (exitosas / total) * 100;
+
+        // Promedio de tiempo solo de las revisiones que sí respondieron
+        const tiempos = revisiones.filter(r => r.tiempo_segundos != null)
+                                  .map(r => Number(r.tiempo_segundos));
+        const promedio = tiempos.length
+          ? (tiempos.reduce((a, b) => a + b, 0) / tiempos.length).toFixed(3)
+          : "—";
+
+        const ultima = new Date(revisiones[0].revisado_en).toLocaleString();
+
+        // Color según qué tan buena es la disponibilidad
+        const clase = uptime >= 99 ? "bien" : uptime >= 90 ? "medio" : "mal";
+
+        html += `
+          <div class="tarjeta">
+            <div class="url">${url}</div>
+            <div class="uptime ${clase}">${uptime.toFixed(1)}%</div>
+            <div class="detalle">
+              ${total} revisiones · ${total - exitosas} fallas<br>
+              Tiempo promedio: ${promedio}s<br>
+              Última revisión: ${ultima}
+            </div>
+          </div>`;
+      }
+      document.getElementById("tarjetas").innerHTML =
+        html || "<p>Aún no hay datos. Ejecuta el monitor primero.</p>";
+    }
+
+    // ---------- Tabla: últimas 25 revisiones ----------
+    function mostrarTabla(filas) {
+      const ultimas = filas.slice(0, 25);
+      let html = "";
+      for (const fila of ultimas) {
+        const fecha = new Date(fila.revisado_en).toLocaleString();
+        const resultado = fila.exito
+          ? '<span class="ok">✔ OK</span>'
+          : '<span class="falla">✘ Falla</span>';
+        html += `
+          <tr>
+            <td>${fecha}</td>
+            <td>${fila.url}</td>
+            <td>${resultado}</td>
+            <td>${fila.status_code ?? "—"}</td>
+            <td>${fila.tiempo_segundos != null ? fila.tiempo_segundos + "s" : "—"}</td>
+          </tr>`;
+      }
+      document.getElementById("tabla").innerHTML = html;
+    }
+
+    // Cargar los datos al abrir la página
+    cargarDatos();
+  </script>
+</body>
+</html>
