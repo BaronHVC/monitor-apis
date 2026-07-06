@@ -5,20 +5,25 @@
 #   1. Revisa cada cierto tiempo si una lista de APIs responde
 #   2. Mide cuánto tarda cada una en responder
 #   3. Guarda todo en un archivo de log (monitor.log)
-#   4. Si una API falla, reintenta y muestra una ALERTA
+#   4. Si una API falla, reintenta y envía una ALERTA por Telegram
 #
 # Cómo usarlo:
 #   python monitor.py            -> vigila para siempre (Ctrl+C para parar)
 #   python monitor.py --una-vez  -> hace una sola ronda (para probar)
+#
 # ============================================================
 
 import logging
+import os
 import sys
 import time
 
 import requests
+from dotenv import load_dotenv
 
-# ---------- CONFIGURACIÓN (puedes editar esto) ----------
+load_dotenv() 
+
+# ---------- CONFIGURACIÓN ----------
 
 # Las APIs que quieres vigilar. Agrega o quita las que gustes.
 URLS = [
@@ -26,12 +31,15 @@ URLS = [
     "https://pokeapi.co/api/v2/pokemon/1", # API pública de Pokémon
 ]
 
-INTERVALO_SEGUNDOS = 300   # cada cuánto revisar (300 = 5 minutos)
+INTERVALO_SEGUNDOS = 300   # cada cuánto revisar (s)
 TIMEOUT_SEGUNDOS = 5       # cuánto esperar antes de considerar que no responde
 REINTENTOS = 2             # cuántas veces reintentar antes de alertar
 
+# Credenciales de Telegram 
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
 # ---------- CONFIGURACIÓN DE LOGS ----------
-# Guarda los mensajes en monitor.log Y los muestra en pantalla.
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,6 +49,32 @@ logging.basicConfig(
         logging.StreamHandler(),  # también imprime en consola
     ],
 )
+
+
+def enviar_alerta_telegram(mensaje: str) -> None:
+    """Envía un mensaje a tu Telegram usando tu bot.
+
+    Si el .env no está configurado, solo lo anota en el log y sigue.
+    """
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        logging.warning("Telegram no configurado (falta .env); alerta solo en log")
+        return
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    try:
+        respuesta = requests.post(
+            url,
+            data={"chat_id": TELEGRAM_CHAT_ID, "text": mensaje},
+            timeout=10,
+        )
+        if respuesta.status_code == 200:
+            logging.info("Alerta enviada por Telegram")
+        else:
+            logging.error(f"Telegram respondió status={respuesta.status_code}")
+    except requests.exceptions.RequestException as error:
+        
+
+        logging.error(f"No se pudo enviar la alerta por Telegram: {error}")
 
 
 def revisar_api(url: str) -> bool:
@@ -80,7 +114,7 @@ def revisar_con_reintentos(url: str) -> None:
     # Si llegamos aquí, falló todos los intentos -> ALERTA
     alerta = f"🚨 ALERTA: {url} sigue fallando después de {REINTENTOS + 1} intentos"
     logging.critical(alerta)
-    # Más adelante puedes reemplazar esto por un correo o mensaje de Telegram
+    enviar_alerta_telegram(alerta)
 
 
 def ronda_de_monitoreo() -> None:

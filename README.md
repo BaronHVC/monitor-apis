@@ -22,7 +22,7 @@ Python 3 · requests · logging
 ## Instalación
 
 ```bash
-git clone https://github.com/TU_USUARIO/monitor-apis.git
+git clone https://github.com/BaronHVC/monitor-apis.git
 cd monitor-apis
 pip install -r requirements.txt
 ```
