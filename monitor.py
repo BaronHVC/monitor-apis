@@ -9,14 +9,10 @@
 #   5. Si una API falla, reintenta y envía una ALERTA por Telegram
 #
 # Cómo usarlo:
-#   python monitor.py            -> vigila para siempre (Ctrl+C para parar)
+#   python monitor.py            -> repeticiones infinitas (Ctrl+C para parar)
 #   python monitor.py --una-vez  -> hace una sola ronda (para probar)
 #
-# Archivo .env requerido (junto a este script):
-#   TELEGRAM_TOKEN=...      (opcional, para alertas)
-#   TELEGRAM_CHAT_ID=...    (opcional, para alertas)
-#   SUPABASE_URL=...        (opcional, para historial)
-#   SUPABASE_KEY=...        (opcional, para historial)
+# Archivo .env requerido 
 # ============================================================
 
 import logging
@@ -27,20 +23,20 @@ import time
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()  # lee el archivo .env (donde guardas tus secretos)
+load_dotenv()  
 
-# ---------- CONFIGURACIÓN (puedes editar esto) ----------
+# ---------- CONFIGURACIÓN ----------
 
 URLS = [
     "https://api.github.com",              # API pública de GitHub
     "https://pokeapi.co/api/v2/pokemon/1", # API pública de Pokémon
 ]
 
-INTERVALO_SEGUNDOS = 300   # cada cuánto revisar (300 = 5 minutos)
+INTERVALO_SEGUNDOS = 300   # cada cuánto revisar (s)
 TIMEOUT_SEGUNDOS = 5       # cuánto esperar antes de considerar que no responde
 REINTENTOS = 2             # cuántas veces reintentar antes de alertar
 
-# Credenciales (vienen del archivo .env, NUNCA se escriben aquí)
+# Credenciales 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -58,7 +54,7 @@ logging.basicConfig(
 )
 
 # ---------- CONEXIÓN A SUPABASE ----------
-# Se conecta una sola vez al inicio. Si no está configurado,
+# Se conecta una sola vez al inicio.
 # el monitor funciona igual pero sin guardar historial.
 
 supabase = None

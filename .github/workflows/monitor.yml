@@ -1,0 +1,38 @@
+# ============================================================
+# Workflow de GitHub Actions: ejecuta el monitor cada 15 min
+# Este archivo debe vivir en: .github/workflows/monitor.yml
+# ============================================================
+
+name: Monitor de APIs
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # cada 15 minutos (hora UTC)
+  workflow_dispatch:          # agrega un botón para ejecutarlo manualmente
+
+jobs:
+  monitorear:
+    runs-on: ubuntu-latest    # GitHub crea una máquina Linux limpia
+
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar una ronda de monitoreo
+        env:
+          # Los secretos se configuran en Settings -> Secrets del repo.
+          # GitHub los inyecta como variables de entorno, que tu código
+          # ya sabe leer con os.getenv() — no hay que cambiar nada.
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python monitor.py --una-vez
