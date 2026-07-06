@@ -53,8 +53,8 @@ Las APIs a vigilar, el intervalo, el timeout y el número de reintentos se confi
 
 - [X] Enviar alertas por correo o Telegram
 - [X] Guardar el historial en una base de datos (Supabase)
-- [ ] Ejecutarlo automáticamente en la nube con GitHub Actions
-- [ ] Dashboard con estadísticas de disponibilidad
+- [X] Ejecutarlo automáticamente en la nube con GitHub Actions
+- [X] Dashboard con estadísticas de disponibilidad
 
 ## Autor
 
