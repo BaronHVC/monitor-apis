@@ -25,7 +25,7 @@ load_dotenv()
 
 # ---------- CONFIGURACIÓN ----------
 
-# Las APIs que quieres vigilar. Agrega o quita las que gustes.
+# Las APIs que se quiere vigilar.
 URLS = [
     "https://api.github.com",              # API pública de GitHub
     "https://pokeapi.co/api/v2/pokemon/1", # API pública de Pokémon
@@ -46,7 +46,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
     handlers=[
         logging.FileHandler("monitor.log", encoding="utf-8"),
-        logging.StreamHandler(),  # también imprime en consola
+        logging.StreamHandler(),  
     ],
 )
 
