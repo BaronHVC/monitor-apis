@@ -30,6 +30,7 @@ load_dotenv()
 URLS = [
     "https://api.github.com",              # API pública de GitHub
     "https://pokeapi.co/api/v2/pokemon/1", # API pública de Pokémon
+    "https://api-que-no-existe-123.com"
 ]
 
 INTERVALO_SEGUNDOS = 300   # cada cuánto revisar (s)
